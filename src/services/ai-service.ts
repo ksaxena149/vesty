@@ -420,15 +420,15 @@ function parseClothingDescription(description: string): ClothingArticle[] {
   // For now, we'll create a basic structure
   const articles: ClothingArticle[] = [];
   
-  // Simple regex patterns to extract clothing items
-      // const patterns = [ // Currently unused
-    /(\w+)\s*(?:shirt|blouse|top)/gi,
-    /(\w+)\s*(?:pants|trousers|jeans)/gi,
-    /(\w+)\s*(?:dress|gown)/gi,
-    /(\w+)\s*(?:jacket|blazer|coat)/gi,
-    /(\w+)\s*(?:shoes|boots|sneakers)/gi,
-    /(\w+)\s*(?:hat|cap|beanie)/gi,
-  ];
+  // Simple regex patterns to extract clothing items (currently unused in this placeholder)
+  // const patterns = [
+  //   /(\w+)\s*(?:shirt|blouse|top)/gi,
+  //   /(\w+)\s*(?:pants|trousers|jeans)/gi,
+  //   /(\w+)\s*(?:dress|gown)/gi,
+  //   /(\w+)\s*(?:jacket|blazer|coat)/gi,
+  //   /(\w+)\s*(?:shoes|boots|sneakers)/gi,
+  //   /(\w+)\s*(?:hat|cap|beanie)/gi,
+  // ];
   
   // This is a placeholder implementation
   // In a production app, you'd want more sophisticated NLP parsing
