@@ -1,4 +1,4 @@
-# Vesty App - Production Docker Compose
+# Vesty App - Production Docker Compose (HTTP Only - Initial Setup)
 version: '3.8'
 
 services:
@@ -12,8 +12,8 @@ services:
       - NODE_ENV=production
     env_file:
       - .env.production
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
       interval: 30s
@@ -21,25 +21,14 @@ services:
       retries: 5
       start_period: 40s
 
-  # Nginx reverse proxy with SSL
+  # Nginx reverse proxy (HTTP only for now)
   nginx:
     image: nginx:alpine
     container_name: vesty-nginx-prod
     ports:
       - "80:80"
-      - "443:443"
     volumes:
       - ./nginx/prod.conf:/etc/nginx/nginx.conf
-      - ./ssl:/etc/nginx/ssl
     depends_on:
       - app
     restart: always
-
-  # Let's Encrypt SSL renewal
-  certbot:
-    image: certbot/certbot
-    container_name: vesty-certbot
-    volumes:
-      - ./ssl:/etc/letsencrypt
-      - ./nginx/www:/var/www/certbot
-    command: certonly --webroot --webroot-path=/var/www/certbot --email your-email@example.com --agree-tos --no-eff-email -d your-domain.com
