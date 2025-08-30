@@ -1,10 +1,7 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "../../../../convex/_generated/api";
-
-// Initialize Convex client for server-side operations
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+import { api } from "@/convex/_generated/api";
+import { convexClient } from '@/lib/convex';
 
 export async function GET(req: NextRequest) {
   try {
@@ -22,12 +19,12 @@ export async function GET(req: NextRequest) {
     // Get images from ConvexDB
     let images;
     if (type && ['USER', 'OUTFIT', 'RESULT'].includes(type)) {
-      images = await convex.query(api.images.getImagesByUserAndType, { 
+      images = await convexClient.query(api.images.getImagesByUserAndType, { 
         userId, 
         type: type as "USER" | "OUTFIT" | "RESULT"
       });
     } else {
-      images = await convex.query(api.images.getImagesByUser, { userId });
+      images = await convexClient.query(api.images.getImagesByUser, { userId });
     }
 
     // Sort by creation date (most recent first) and paginate
@@ -80,7 +77,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Create image record in ConvexDB
-    const imageId = await convex.mutation(api.images.createImage, {
+    const imageId = await convexClient.mutation(api.images.createImage, {
       userId,
       type,
       url,
@@ -90,7 +87,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Get the created image to return
-    const image = await convex.query(api.images.getImageById, { id: imageId });
+    const image = await convexClient.query(api.images.getImageById, { id: imageId });
 
     return NextResponse.json({
       ...image,

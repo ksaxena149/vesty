@@ -1,14 +1,11 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "../../../../convex/_generated/api";
+import { api } from "@/convex/_generated/api";
+import { convexClient } from '@/lib/convex';
 import { performOutfitSwap, imageToBase64Server } from '@/services/ai-service';
 import { uploadFileToS3, uploadBase64ToS3, validateS3Config } from '@/lib/aws-s3';
 import fs from 'fs';
 import path from 'path';
-
-// Initialize Convex client for server-side operations
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export async function POST(request: NextRequest) {
   try {
@@ -83,7 +80,7 @@ export async function POST(request: NextRequest) {
     console.log('Uploading images to S3...');
     
     // First, ensure user exists in ConvexDB
-    await convex.mutation(api.users.createOrUpdateUser, {
+    await convexClient.mutation(api.users.createOrUpdateUser, {
       id: userId,
       email: '', // We could get this from Clerk if needed
     });
@@ -109,7 +106,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Save image records to ConvexDB with S3 URLs
-    const userImageId = await convex.mutation(api.images.createImage, {
+    const userImageId = await convexClient.mutation(api.images.createImage, {
       userId,
       type: 'USER',
       url: userImageUpload.url!,
@@ -118,7 +115,7 @@ export async function POST(request: NextRequest) {
       mimeType: personImage.type,
     });
 
-    const outfitImageId = await convex.mutation(api.images.createImage, {
+    const outfitImageId = await convexClient.mutation(api.images.createImage, {
       userId,
       type: 'OUTFIT', 
       url: outfitImageUpload.url!,
@@ -142,7 +139,7 @@ export async function POST(request: NextRequest) {
         console.error('Failed to upload generated image to S3:', resultImageUpload.error);
         // Continue without saving result image rather than failing the entire request
       } else {
-        resultImageId = await convex.mutation(api.images.createImage, {
+        resultImageId = await convexClient.mutation(api.images.createImage, {
           userId,
           type: 'RESULT',
           url: resultImageUpload.url!,
@@ -166,10 +163,10 @@ export async function POST(request: NextRequest) {
       swapData.resultImageId = resultImageId;
     }
     
-    const swapId = await convex.mutation(api.swaps.createSwap, swapData);
+    const swapId = await convexClient.mutation(api.swaps.createSwap, swapData);
 
     // Update with completion timestamp
-    await convex.mutation(api.swaps.updateSwapStatus, {
+    await convexClient.mutation(api.swaps.updateSwapStatus, {
       id: swapId,
       status: 'COMPLETED',
       processingCompletedAt: Date.now(),
@@ -185,7 +182,7 @@ export async function POST(request: NextRequest) {
 
     // Get the final result image URL (S3 URL if uploaded, otherwise original base64)
     const finalImageUrl = resultImageId 
-      ? (await convex.query(api.images.getImageById, { id: resultImageId }))?.url || swapResult.generatedImageUrl
+      ? (await convexClient.query(api.images.getImageById, { id: resultImageId }))?.url || swapResult.generatedImageUrl
       : swapResult.generatedImageUrl;
 
     return NextResponse.json({
@@ -226,7 +223,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
 
     // Get swaps from ConvexDB
-    const allSwaps = await convex.query(api.swaps.getSwapsByUser, { userId });
+    const allSwaps = await convexClient.query(api.swaps.getSwapsByUser, { userId });
     const completedSwaps = allSwaps.filter(swap => swap.status === 'COMPLETED');
     
     // Paginate results

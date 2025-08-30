@@ -1,8 +1,5 @@
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "../../convex/_generated/api";
-
-// Initialize Convex client for server-side operations
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+import { api } from "@/convex/_generated/api";
+import { convexClient } from '@/lib/convex';
 
 export interface ClerkUser {
   id: string;
@@ -26,14 +23,14 @@ export async function syncUserFromClerk(clerkUser: ClerkUser) {
 
   try {
     // Create or update user in ConvexDB
-    const userId = await convex.mutation(api.users.createOrUpdateUser, {
+    const userId = await convexClient.mutation(api.users.createOrUpdateUser, {
       id: clerkUser.id,
       email,
       name,
     });
 
     // Get the user data to return
-    const user = await convex.query(api.users.getUserById, { id: clerkUser.id });
+    const user = await convexClient.query(api.users.getUserById, { id: clerkUser.id });
 
     console.log('✅ User synced:', { id: user?.id, email: user?.email, name: user?.name });
     return user ? {
@@ -56,8 +53,8 @@ export async function deleteUserFromDb(userId: string) {
     console.log('⚠️ Manual cleanup of related records may be needed');
     
     // TODO: Implement manual cleanup of images and swaps
-    // const userImages = await convex.query(api.images.getImagesByUser, { userId });
-    // const userSwaps = await convex.query(api.swaps.getSwapsByUser, { userId });
+    // const userImages = await convexClient.query(api.images.getImagesByUser, { userId });
+    // const userSwaps = await convexClient.query(api.swaps.getSwapsByUser, { userId });
     // Clean up these records before deleting the user
     
   } catch (error) {
@@ -69,9 +66,9 @@ export async function deleteUserFromDb(userId: string) {
 export async function getUserFromDb(userId: string) {
   try {
     const [user, images, swaps] = await Promise.all([
-      convex.query(api.users.getUserById, { id: userId }),
-      convex.query(api.images.getImagesByUser, { userId }),
-      convex.query(api.swaps.getSwapsByUser, { userId })
+      convexClient.query(api.users.getUserById, { id: userId }),
+      convexClient.query(api.images.getImagesByUser, { userId }),
+      convexClient.query(api.swaps.getSwapsByUser, { userId })
     ]);
 
     if (!user) {

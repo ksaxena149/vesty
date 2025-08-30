@@ -1,11 +1,8 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { generatePresignedUrl } from '@/lib/aws-s3';
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "../../../../../convex/_generated/api";
-
-// Initialize Convex client for server-side operations
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+import { api } from "@/convex/_generated/api";
+import { convexClient } from '@/lib/convex';
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,7 +23,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get image from ConvexDB to verify ownership and get S3 key
-    const image = await convex.query(api.images.getImageById, { id: imageId as any });
+    const image = await convexClient.query(api.images.getImageById, { id: imageId as any });
     
     if (!image) {
       return NextResponse.json(
