@@ -4,7 +4,7 @@ import { getUserFromDb } from '@/lib/user-sync';
 
 export async function GET() {
   try {
-    const { userId } = auth();
+    const { userId } = await auth(); // FIXED: auth() is now async
 
     if (!userId) {
       return new NextResponse('Unauthorized', { status: 401 });

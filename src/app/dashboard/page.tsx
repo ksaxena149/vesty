@@ -18,6 +18,24 @@ export default async function DashboardPage() {
 
         {/* Dashboard Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {/* Test Upload Card (Phase 4) */}
+          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 ring-2 ring-orange-200">
+            <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
+              <span className="text-2xl">🧪</span>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Test Upload System
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Test AWS S3 integration and image processing
+            </p>
+            <Link href="/dashboard/upload-test">
+              <button className="w-full bg-orange-600 hover:bg-orange-700 text-white py-2 px-4 rounded-md transition-colors">
+                Test Upload
+              </button>
+            </Link>
+          </div>
+
           {/* Upload Image Card */}
           <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">

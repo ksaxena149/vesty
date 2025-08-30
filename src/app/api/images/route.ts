@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db';
 
 export async function GET(req: NextRequest) {
   try {
-    const { userId } = auth();
+    const { userId } = await auth(); // FIXED: auth() is now async
 
     if (!userId) {
       return new NextResponse('Unauthorized', { status: 401 });
@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { userId } = auth();
+    const { userId } = await auth(); // FIXED: auth() is now async
 
     if (!userId) {
       return new NextResponse('Unauthorized', { status: 401 });
