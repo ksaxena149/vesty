@@ -102,6 +102,29 @@ if [ ! -f "docker-compose.prod.yml" ]; then
     echo
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         print_warning "Please complete the setup and run this script again."
+        print_warning "Hint: Run './scripts/aws/create-env.sh' to create environment file"
+        exit 1
+    fi
+fi
+
+# Check if .env.production exists
+if [ ! -f ".env.production" ]; then
+    print_error ".env.production file is missing!"
+    print_status "Create it using one of these methods:"
+    echo "1. Interactive setup: ./scripts/aws/create-env.sh"
+    echo "2. Manual creation: nano .env.production"
+    echo ""
+    read -p "Do you want to run the interactive setup now? (y/N): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        chmod +x scripts/aws/create-env.sh
+        ./scripts/aws/create-env.sh
+        if [ ! -f ".env.production" ]; then
+            print_error "Environment setup was not completed"
+            exit 1
+        fi
+    else
+        print_error "Please create .env.production file and run this script again"
         exit 1
     fi
 fi

@@ -19,7 +19,10 @@
     "docker:dev": "docker-compose up --build",
     "docker:prod": "docker-compose -f docker-compose.prod.yml up -d --build",
     "docker:stop": "docker-compose -f docker-compose.prod.yml down",
-    "docker:logs": "docker-compose -f docker-compose.prod.yml logs -f"
+    "docker:logs": "docker-compose -f docker-compose.prod.yml logs -f",
+    "aws:create-env": "scripts/aws/create-env.sh",
+    "aws:deploy": "scripts/aws/deploy-ec2.sh",
+    "aws:ssl": "scripts/aws/setup-ssl.sh"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.879.0",

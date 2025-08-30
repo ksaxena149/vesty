@@ -107,35 +107,83 @@ sudo chown -R vesty:vesty /home/vesty/vesty-app
 ```
 
 ### 3.2 Configure Environment Variables
+
+You have **3 options** to create your `.env.production` file on the EC2 server:
+
+#### **Option A: Interactive Setup Script (Recommended)**
 ```bash
 cd /home/vesty/vesty-app
 
-# Copy and edit production environment
-cp .env.production .env.production.backup
+# Run interactive environment setup
+chmod +x scripts/aws/create-env.sh
+./scripts/aws/create-env.sh
+```
+This script will guide you through setting up all environment variables with validation.
+
+#### **Option B: Manual Creation**
+```bash
+cd /home/vesty/vesty-app
+
+# Create production environment file (this file is NOT in git for security)
 nano .env.production
 ```
 
-Fill in your production values:
+**Fill in your production values:**
 ```env
-# Clerk Authentication (PRODUCTION KEYS!)
+# ===========================================
+# CLERK AUTHENTICATION (PRODUCTION KEYS!)
+# ===========================================
+# Get production keys from: https://dashboard.clerk.com
+# NOTE: Use pk_live_* and sk_live_* for production
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_your_live_key_here
 CLERK_SECRET_KEY=sk_live_your_live_secret_here
 
-# ConvexDB (Production deployment)
+# ===========================================
+# CONVEX DATABASE (PRODUCTION DEPLOYMENT)
+# ===========================================
+# Create production deployment at: https://dashboard.convex.dev
 NEXT_PUBLIC_CONVEX_URL=https://your-prod-project.convex.cloud
 
-# Google AI
+# ===========================================
+# GOOGLE AI (GEMINI)
+# ===========================================  
 GOOGLE_AI_API_KEY=your_google_ai_api_key_here
 
-# AWS S3 (Production bucket)
+# ===========================================
+# AWS S3 STORAGE (PRODUCTION BUCKET)
+# ===========================================
+# Create separate production S3 bucket for production
 AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=your_aws_access_key
-AWS_SECRET_ACCESS_KEY=your_aws_secret_key
-AWS_S3_BUCKET_NAME=your-production-bucket
+AWS_ACCESS_KEY_ID=your_production_aws_access_key
+AWS_SECRET_ACCESS_KEY=your_production_aws_secret_key
+AWS_S3_BUCKET_NAME=vesty-production-bucket
 
-# Application
+# ===========================================
+# APPLICATION CONFIGURATION
+# ===========================================
 NODE_ENV=production
 NEXT_PUBLIC_APP_URL=https://yourdomain.com
+PORT=3000
+HOSTNAME=0.0.0.0
+```
+
+#### **Option C: Upload from Local Machine**
+```bash
+# From your local machine (if you have .env.production locally)
+scp -i your-key.pem .env.production ubuntu@YOUR_EC2_IP:/home/ubuntu/
+ssh -i your-key.pem ubuntu@YOUR_EC2_IP
+sudo cp /home/ubuntu/.env.production /home/vesty/vesty-app/
+sudo chown vesty:vesty /home/vesty/vesty-app/.env.production
+```
+
+**Important: Secure the environment file**
+```bash
+# Make sure only you can read the environment file
+chmod 600 .env.production
+
+# Verify the file was created correctly
+ls -la .env.production
+head .env.production
 ```
 
 ### 3.3 Update Domain Configuration
@@ -450,6 +498,9 @@ aws ce get-cost-and-usage --time-period Start=2024-01-01,End=2024-01-31 --granul
 
 ### Quick Reference
 - **Application Directory**: `/home/vesty/vesty-app`
+- **Create Environment**: `./scripts/aws/create-env.sh`
+- **Deploy App**: `./scripts/aws/deploy-ec2.sh`
+- **Setup SSL**: `./scripts/aws/setup-ssl.sh`
 - **Logs**: `docker-compose -f docker-compose.prod.yml logs -f`
 - **Status**: `./monitor.sh`
 - **Update**: `./update.sh`
