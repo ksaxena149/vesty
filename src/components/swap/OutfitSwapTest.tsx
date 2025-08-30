@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 interface SwapResult {
   success: boolean;
   swapId?: string;
+  resultImageId?: string;
   generatedImageUrl?: string;
   message?: string;
   error?: string;
@@ -22,6 +23,7 @@ export default function OutfitSwapTest() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<SwapResult | null>(null);
+  const [presignedImageUrl, setPresignedImageUrl] = useState<string | null>(null);
 
   const handleFileChange = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -57,6 +59,24 @@ export default function OutfitSwapTest() {
       }
     };
     reader.readAsDataURL(file);
+  };
+
+  // Helper function to get presigned URL for secure image access
+  const getPresignedUrl = async (imageId: string, action: 'view' | 'download' = 'view'): Promise<string | null> => {
+    try {
+      const response = await fetch(`/api/images/presigned?imageId=${imageId}&action=${action}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        return data.url;
+      } else {
+        console.error('Failed to get presigned URL:', data.error);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error getting presigned URL:', error);
+      return null;
+    }
   };
 
   const handleSwap = async () => {
@@ -97,6 +117,15 @@ export default function OutfitSwapTest() {
 
       if (response.ok && data.success) {
         setResult(data);
+        
+        // If we have a result image ID, fetch the presigned URL for viewing
+        if (data.resultImageId) {
+          const viewUrl = await getPresignedUrl(data.resultImageId, 'view');
+          if (viewUrl) {
+            setPresignedImageUrl(viewUrl);
+          }
+        }
+        
         toast.success('Outfit swap completed successfully!');
       } else {
         setResult({ success: false, error: data.error || 'Unknown error occurred' });
@@ -120,6 +149,7 @@ export default function OutfitSwapTest() {
     setOutfitPreview(null);
     setPersonPreview(null);
     setResult(null);
+    setPresignedImageUrl(null);
     setProgress(0);
   };
 
@@ -258,29 +288,53 @@ export default function OutfitSwapTest() {
                 {result.success ? (
                   <div className="space-y-4">
                     <p className="text-green-600 font-medium">✅ {result.message}</p>
-                    {result.generatedImageUrl && (
+                    {(presignedImageUrl || result.generatedImageUrl) && (
                       <div className="space-y-2">
                         <h4 className="font-semibold">Generated Image:</h4>
                         <img
-                          src={result.generatedImageUrl}
+                          src={presignedImageUrl || result.generatedImageUrl}
                           alt="Generated outfit swap"
                           className="max-w-full h-auto rounded-lg border"
                         />
                         <div className="flex gap-2">
                           <Button
-                            onClick={() => window.open(result.generatedImageUrl, '_blank')}
+                            onClick={() => {
+                              const imageUrl = presignedImageUrl || result.generatedImageUrl;
+                              if (imageUrl) window.open(imageUrl, '_blank');
+                            }}
                           >
                             View Full Size
                           </Button>
                           <Button
                             variant="outline"
-                            onClick={() => {
-                              const link = document.createElement('a');
-                              link.href = result.generatedImageUrl!;
-                              link.download = `outfit-swap-${result.swapId}.jpg`;
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
+                            onClick={async () => {
+                              try {
+                                let downloadUrl = null;
+                                
+                                if (result.resultImageId) {
+                                  // Get presigned URL for download
+                                  downloadUrl = await getPresignedUrl(result.resultImageId, 'download');
+                                }
+                                
+                                // Fallback to current image URL
+                                if (!downloadUrl) {
+                                  downloadUrl = presignedImageUrl || result.generatedImageUrl;
+                                }
+                                
+                                if (downloadUrl) {
+                                  const link = document.createElement('a');
+                                  link.href = downloadUrl;
+                                  link.download = `outfit-swap-${result.swapId}.jpg`;
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  document.body.removeChild(link);
+                                } else {
+                                  toast.error('Unable to download image');
+                                }
+                              } catch (error) {
+                                console.error('Download error:', error);
+                                toast.error('Failed to download image');
+                              }
                             }}
                           >
                             Download

@@ -1,6 +1,10 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../../../convex/_generated/api";
+
+// Initialize Convex client for server-side operations
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,25 +19,29 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
 
-    // Build where clause
-    const where: any = { userId };
+    // Get images from ConvexDB
+    let images;
     if (type && ['USER', 'OUTFIT', 'RESULT'].includes(type)) {
-      where.type = type;
+      images = await convex.query(api.images.getImagesByUserAndType, { 
+        userId, 
+        type: type as "USER" | "OUTFIT" | "RESULT"
+      });
+    } else {
+      images = await convex.query(api.images.getImagesByUser, { userId });
     }
 
-    // Get images with pagination
-    const [images, total] = await Promise.all([
-      prisma.image.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.image.count({ where }),
-    ]);
+    // Sort by creation date (most recent first) and paginate
+    images.sort((a, b) => b.createdAt - a.createdAt);
+    const total = images.length;
+    const paginatedImages = images.slice((page - 1) * limit, page * limit);
 
     return NextResponse.json({
-      images,
+      images: paginatedImages.map(img => ({
+        ...img,
+        id: img._id,
+        createdAt: new Date(img.createdAt),
+        updatedAt: new Date(img.updatedAt),
+      })),
       pagination: {
         page,
         limit,
@@ -71,19 +79,25 @@ export async function POST(req: NextRequest) {
       return new NextResponse('Invalid image type', { status: 400 });
     }
 
-    // Create image record
-    const image = await prisma.image.create({
-      data: {
-        userId,
-        type,
-        url,
-        filename,
-        fileSize,
-        mimeType,
-      },
+    // Create image record in ConvexDB
+    const imageId = await convex.mutation(api.images.createImage, {
+      userId,
+      type,
+      url,
+      filename,
+      fileSize,
+      mimeType,
     });
 
-    return NextResponse.json(image);
+    // Get the created image to return
+    const image = await convex.query(api.images.getImageById, { id: imageId });
+
+    return NextResponse.json({
+      ...image,
+      id: image?._id,
+      createdAt: image ? new Date(image.createdAt) : new Date(),
+      updatedAt: image ? new Date(image.updatedAt) : new Date(),
+    });
 
   } catch (error) {
     console.error('❌ Error creating image:', error);

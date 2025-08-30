@@ -252,6 +252,84 @@ export async function getFileMetadata(key: string) {
 }
 
 /**
+ * Upload base64 image data to S3 (for AI generated images)
+ */
+export async function uploadBase64ToS3(
+  base64Data: string,
+  filename: string,
+  userId?: string
+): Promise<UploadResult> {
+  try {
+    // Remove data URL prefix if present (data:image/png;base64,...)
+    const base64Content = base64Data.includes(',') 
+      ? base64Data.split(',')[1] 
+      : base64Data;
+    
+    // Convert base64 to buffer
+    const buffer = Buffer.from(base64Content, 'base64');
+    
+    // Generate unique key
+    const key = generateFileKey(filename, userId);
+    
+    // Determine content type from filename or default to PNG
+    const extension = filename.split('.').pop()?.toLowerCase() || 'png';
+    const contentType = extension === 'jpg' || extension === 'jpeg' 
+      ? 'image/jpeg' 
+      : `image/${extension}`;
+    
+    return await uploadToS3(buffer, key, contentType, {
+      originalFilename: filename,
+      source: 'ai-generated',
+      userId: userId || 'anonymous',
+    });
+  } catch (error) {
+    console.error('Base64 S3 Upload Error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Upload failed',
+    };
+  }
+}
+
+/**
+ * Upload File object to S3 (for user uploaded images)
+ */
+export async function uploadFileToS3(
+  file: File,
+  userId?: string
+): Promise<UploadResult> {
+  try {
+    // Validate file first
+    const validation = validateFile(file);
+    if (!validation.valid) {
+      return {
+        success: false,
+        error: validation.error,
+      };
+    }
+    
+    // Convert File to Buffer
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    
+    // Generate unique key
+    const key = generateFileKey(file.name, userId);
+    
+    return await uploadToS3(buffer, key, file.type, {
+      originalFilename: file.name,
+      source: 'user-upload',
+      userId: userId || 'anonymous',
+    });
+  } catch (error) {
+    console.error('File S3 Upload Error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Upload failed',
+    };
+  }
+}
+
+/**
  * Validate AWS S3 configuration
  */
 export function validateS3Config(): { valid: boolean; error?: string } {

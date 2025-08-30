@@ -1,7 +1,14 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../../../convex/_generated/api";
 import { performOutfitSwap, imageToBase64Server } from '@/services/ai-service';
+import { uploadFileToS3, uploadBase64ToS3, validateS3Config } from '@/lib/aws-s3';
+import fs from 'fs';
+import path from 'path';
+
+// Initialize Convex client for server-side operations
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,79 +70,131 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Temporarily bypassing database for testing
-    console.log('Skipping database save for testing...');
-    
-    /* Database operations temporarily disabled for testing
-    // First, create image records for the uploaded images and generated result
-    console.log('Saving images to database...');
-    
-    // Save user image
-    const userImage = await prisma.image.create({
-      data: {
-        userId,
-        type: 'USER',
-        url: '', // We could upload to S3 here if needed
-        filename: personImage.name,
-        fileSize: personImage.size,
-        mimeType: personImage.type,
-      }
-    });
-
-    // Save outfit image  
-    const outfitImageRecord = await prisma.image.create({
-      data: {
-        userId,
-        type: 'OUTFIT', 
-        url: '', // We could upload to S3 here if needed
-        filename: outfitImage.name,
-        fileSize: outfitImage.size,
-        mimeType: outfitImage.type,
-      }
-    });
-
-    // Save generated result image (if we have one)
-    let resultImageRecord = null;
-    if (swapResult.generatedImageUrl) {
-      resultImageRecord = await prisma.image.create({
-        data: {
-          userId,
-          type: 'RESULT',
-          url: swapResult.generatedImageUrl,
-          filename: `swap-result-${Date.now()}.png`,
-          fileSize: 0, // We don't know the size of generated image
-          mimeType: 'image/png',
-        }
-      });
+    // Validate S3 configuration
+    const s3Config = validateS3Config();
+    if (!s3Config.valid) {
+      console.error('S3 configuration error:', s3Config.error);
+      return NextResponse.json(
+        { error: `Storage configuration error: ${s3Config.error}` },
+        { status: 500 }
+      );
     }
 
-    // Now create the swap record with proper foreign keys
-    const swap = await prisma.swap.create({
-      data: {
-        userId,
-        userImageId: userImage.id,
-        outfitImageId: outfitImageRecord.id,
-        resultImageId: resultImageRecord?.id,
-        status: 'COMPLETED', // Use correct enum value
-        processingCompletedAt: new Date(),
-      }
+    console.log('Uploading images to S3...');
+    
+    // First, ensure user exists in ConvexDB
+    await convex.mutation(api.users.createOrUpdateUser, {
+      id: userId,
+      email: '', // We could get this from Clerk if needed
     });
-    */
 
-    // Temporary response for testing
-    const swap = { 
-      id: `temp-swap-${Date.now()}`,
+    // Upload user's person image to S3
+    console.log('Uploading person image to S3...');
+    const userImageUpload = await uploadFileToS3(personImage, userId);
+    if (!userImageUpload.success) {
+      return NextResponse.json(
+        { error: `Failed to upload person image: ${userImageUpload.error}` },
+        { status: 500 }
+      );
+    }
+
+    // Upload user's outfit image to S3
+    console.log('Uploading outfit image to S3...');
+    const outfitImageUpload = await uploadFileToS3(outfitImage, userId);
+    if (!outfitImageUpload.success) {
+      return NextResponse.json(
+        { error: `Failed to upload outfit image: ${outfitImageUpload.error}` },
+        { status: 500 }
+      );
+    }
+
+    // Save image records to ConvexDB with S3 URLs
+    const userImageId = await convex.mutation(api.images.createImage, {
+      userId,
+      type: 'USER',
+      url: userImageUpload.url!,
+      filename: personImage.name,
+      fileSize: personImage.size,
+      mimeType: personImage.type,
+    });
+
+    const outfitImageId = await convex.mutation(api.images.createImage, {
+      userId,
+      type: 'OUTFIT', 
+      url: outfitImageUpload.url!,
+      filename: outfitImage.name,
+      fileSize: outfitImage.size,
+      mimeType: outfitImage.type,
+    });
+
+    // Upload generated AI image to S3 (if we have one)
+    let resultImageId = null;
+    if (swapResult.generatedImageUrl) {
+      console.log('Uploading generated image to S3...');
+      const resultFilename = `swap-result-${Date.now()}.png`;
+      const resultImageUpload = await uploadBase64ToS3(
+        swapResult.generatedImageUrl,
+        resultFilename,
+        userId
+      );
+      
+      if (!resultImageUpload.success) {
+        console.error('Failed to upload generated image to S3:', resultImageUpload.error);
+        // Continue without saving result image rather than failing the entire request
+      } else {
+        resultImageId = await convex.mutation(api.images.createImage, {
+          userId,
+          type: 'RESULT',
+          url: resultImageUpload.url!,
+          filename: resultFilename,
+          fileSize: resultImageUpload.metadata?.size || 0,
+          mimeType: 'image/png',
+        });
+      }
+    }
+
+    // Create the swap record
+    const swapData: any = {
+      userId,
+      userImageId,
+      outfitImageId,
+      status: 'COMPLETED',
+    };
+    
+    // Only include resultImageId if it's not null
+    if (resultImageId) {
+      swapData.resultImageId = resultImageId;
+    }
+    
+    const swapId = await convex.mutation(api.swaps.createSwap, swapData);
+
+    // Update with completion timestamp
+    await convex.mutation(api.swaps.updateSwapStatus, {
+      id: swapId,
+      status: 'COMPLETED',
+      processingCompletedAt: Date.now(),
+    });
+
+    const swap = {
+      id: swapId,
       status: 'COMPLETED',
       processingCompletedAt: new Date()
     };
 
     console.log('Outfit swap completed successfully:', swap.id);
 
+    // Get the final result image URL (S3 URL if uploaded, otherwise original base64)
+    const finalImageUrl = resultImageId 
+      ? (await convex.query(api.images.getImageById, { id: resultImageId }))?.url || swapResult.generatedImageUrl
+      : swapResult.generatedImageUrl;
+
     return NextResponse.json({
       success: true,
       swapId: swap.id,
-      generatedImageUrl: swapResult.generatedImageUrl,
-      message: 'Outfit swap completed successfully'
+      resultImageId: resultImageId, // Include image ID for presigned URL generation
+      generatedImageUrl: finalImageUrl,
+      message: 'Outfit swap completed successfully',
+      storage: 's3', // Indicate that images are stored in S3
     });
 
   } catch (error) {
@@ -166,40 +225,22 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = parseInt(searchParams.get('offset') || '0');
 
-    const swaps = await prisma.swap.findMany({
-      where: {
-        userId,
-        status: 'COMPLETED'
-      },
-      orderBy: {
-        createdAt: 'desc'
-      },
-      take: limit,
-      skip: offset,
-      select: {
-        id: true,
-        createdAt: true,
-        status: true,
-        resultImage: {
-          select: {
-            url: true,
-            filename: true
-          }
-        }
-      }
-    });
+    // Get swaps from ConvexDB
+    const allSwaps = await convex.query(api.swaps.getSwapsByUser, { userId });
+    const completedSwaps = allSwaps.filter(swap => swap.status === 'COMPLETED');
+    
+    // Paginate results
+    const paginatedSwaps = completedSwaps.slice(offset, offset + limit);
 
     return NextResponse.json({
       success: true,
-      swaps: swaps.map(swap => ({
-        id: swap.id,
-        createdAt: swap.createdAt,
+      swaps: paginatedSwaps.map(swap => ({
+        id: swap._id,
+        createdAt: new Date(swap.createdAt),
         status: swap.status,
         generatedImageUrl: swap.resultImage?.url || null
       })),
-      total: await prisma.swap.count({
-        where: { userId, status: 'COMPLETED' }
-      })
+      total: completedSwaps.length
     });
 
   } catch (error) {
