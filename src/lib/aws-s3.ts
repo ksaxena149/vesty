@@ -261,9 +261,13 @@ export async function uploadBase64ToS3(
 ): Promise<UploadResult> {
   try {
     // Remove data URL prefix if present (data:image/png;base64,...)
-    const base64Content = base64Data.includes(',') 
+        const base64Content = base64Data.includes(',')
       ? base64Data.split(',')[1] 
       : base64Data;
+    
+    if (!base64Content) {
+      return { success: false, error: 'Invalid base64 data' };
+    }
     
     // Convert base64 to buffer
     const buffer = Buffer.from(base64Content, 'base64');
@@ -304,7 +308,7 @@ export async function uploadFileToS3(
     if (!validation.valid) {
       return {
         success: false,
-        error: validation.error,
+        error: validation.error ?? 'Validation failed',
       };
     }
     

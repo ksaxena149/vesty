@@ -12,10 +12,10 @@ if (!webhookSecret) {
 export async function POST(req: NextRequest) {
   try {
     // Get the headers
-    const headerPayload = headers();
-    const svixId = headerPayload.get('svix-id');
-    const svixTimestamp = headerPayload.get('svix-timestamp');
-    const svixSignature = headerPayload.get('svix-signature');
+      const headerPayload = await headers();
+  const svixId = headerPayload.get('svix-id');
+  const svixTimestamp = headerPayload.get('svix-timestamp');
+  const svixSignature = headerPayload.get('svix-signature');
 
     // If there are no headers, error out
     if (!svixId || !svixTimestamp || !svixSignature) {
@@ -26,8 +26,8 @@ export async function POST(req: NextRequest) {
     const payload = await req.json();
     const body = JSON.stringify(payload);
 
-    // Create a new Svix instance with your secret
-    const wh = new Webhook(webhookSecret);
+    // Create a new Svix instance with your secret (we already checked it exists)
+    const wh = new Webhook(webhookSecret!);
 
     let evt;
     try {
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
 
     // Handle the webhook
     const eventType = evt.type;
-    const userData = evt.data as ClerkUser;
+    const userData = evt.data as unknown as ClerkUser;
 
     console.log(`📞 Webhook received: ${eventType}`, { userId: userData?.id });
 

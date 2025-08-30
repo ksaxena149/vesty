@@ -117,7 +117,7 @@ export async function optimizeImage(
       case 'webp':
         pipeline = pipeline.webp({
           quality: options.quality || IMAGE_CONFIG.WEBP_QUALITY,
-          progressive,
+          // progressive, // Not supported in WebP
         });
         break;
       
@@ -303,7 +303,7 @@ export async function batchOptimizeImages(
       return result.value;
     } else {
       return {
-        filename: images[index].filename,
+        filename: images?.[index]?.filename ?? `image-${index}.jpg`,
         result: {
           success: false,
           error: `Batch processing failed: ${result.reason}`,

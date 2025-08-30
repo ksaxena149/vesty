@@ -22,12 +22,17 @@ export async function syncUserFromClerk(clerkUser: ClerkUser) {
     .join(' ') || null;
 
   try {
-    // Create or update user in ConvexDB
-    await convexClient.mutation(api.users.createOrUpdateUser, {
+    // Create or update user in ConvexDB - construct data with proper typing
+    const userData: any = {
       id: clerkUser.id,
       email,
-      name,
-    });
+    };
+    
+    if (name) {
+      userData.name = name;
+    }
+    
+    await convexClient.mutation(api.users.createOrUpdateUser, userData);
 
     // Get the user data to return
     const user = await convexClient.query(api.users.getUserById, { id: clerkUser.id });

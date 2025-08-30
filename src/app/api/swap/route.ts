@@ -150,11 +150,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the swap record
-    const swapData = {
+    const swapData: any = {
       userId,
       userImageId,
       outfitImageId,
-      status: 'COMPLETED',
+      status: 'COMPLETED' as const,
     };
     
     // Only include resultImageId if it's not null

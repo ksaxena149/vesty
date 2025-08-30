@@ -26,13 +26,19 @@ export const createOrUpdateUser = mutation({
       return existingUser._id;
     } else {
       // Create new user
-      return await ctx.db.insert("users", {
+      const userData: any = {
         id: args.id,
         email: args.email,
-        name: args.name ?? undefined, // Explicit undefined handling
         createdAt: now,
         updatedAt: now,
-      });
+      };
+      
+      // Only include name if it's not undefined
+      if (args.name !== undefined) {
+        userData.name = args.name;
+      }
+      
+      return await ctx.db.insert("users", userData);
     }
   },
 });

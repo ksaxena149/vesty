@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generatePresignedUrl } from '@/lib/aws-s3';
 import { api } from "@/convex/_generated/api";
 import { convexClient } from '@/lib/convex';
-import { Id } from '@/convex/_generated/dataModel';
+import type { Id } from '@/convex/_generated/dataModel';
 
 export async function GET(request: NextRequest) {
   try {

@@ -9,7 +9,7 @@ import { validateFile, uploadToS3, generateFileKey, validateS3Config } from '@/l
 import { optimizeImage, validateImageBuffer, calculateOptimalSettings } from '@/lib/image-processing';
 import { api } from '@/convex/_generated/api';
 import { convexClient } from '@/lib/convex';
-import { Id } from '@/convex/_generated/dataModel';
+import type { Id } from '@/convex/_generated/dataModel';
 
 // Maximum file size for upload (5MB)
 // const MAX_FILE_SIZE = 5 * 1024 * 1024; // Currently unused
@@ -34,14 +34,21 @@ async function ensureUserExists(userId: string) {
       throw new Error('Unable to fetch user data from Clerk');
     }
 
-    // Create user in database
-    await convexClient.mutation(api.users.createOrUpdateUser, {
+    // Create user in database - construct data with proper typing
+    const userData: any = {
       id: userId,
       email: clerkUser.emailAddresses[0]?.emailAddress || '',
-      name: clerkUser.firstName && clerkUser.lastName 
-        ? `${clerkUser.firstName} ${clerkUser.lastName}`
-        : clerkUser.firstName || clerkUser.lastName || null,
-    });
+    };
+    
+    const userName = clerkUser.firstName && clerkUser.lastName 
+      ? `${clerkUser.firstName} ${clerkUser.lastName}`
+      : clerkUser.firstName || clerkUser.lastName;
+    
+    if (userName) {
+      userData.name = userName;
+    }
+    
+    await convexClient.mutation(api.users.createOrUpdateUser, userData);
 
     // Get the created user
     const newUser = await convexClient.query(api.users.getUserById, {
@@ -199,15 +206,15 @@ export async function POST(req: NextRequest) {
       id: imageRecordId
     });
 
-    console.log('✅ Database record created:', imageRecord.id);
+    console.log('✅ Database record created:', imageRecord?._id);
     console.log('=== UPLOAD SUCCESS ===');
 
     // Return success response with all metadata
     return NextResponse.json({
       success: true,
       data: {
-        id: imageRecord.id,
-        filename: imageRecord.filename,
+        id: imageRecord?._id,
+        filename: imageRecord?.filename,
         url: uploadResult.url,
         metadata: {
           width: optimizationResult.metadata.width,
