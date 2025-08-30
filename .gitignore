@@ -56,3 +56,6 @@ tasks.md
 # OS generated files
 Thumbs.db
 ehthumbs.db
+
+/src/generated/prisma
+.cursor
