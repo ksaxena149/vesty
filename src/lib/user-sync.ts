@@ -23,7 +23,7 @@ export async function syncUserFromClerk(clerkUser: ClerkUser) {
 
   try {
     // Create or update user in ConvexDB
-    const userId = await convexClient.mutation(api.users.createOrUpdateUser, {
+    await convexClient.mutation(api.users.createOrUpdateUser, {
       id: clerkUser.id,
       email,
       name,

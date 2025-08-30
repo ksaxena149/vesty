@@ -7,7 +7,7 @@ if (!apiKey) {
   throw new Error('Google AI API key is required');
 }
 console.log('Google AI API key loaded:', apiKey.substring(0, 10) + '...');
-// const genAI = new GoogleGenerativeAI(apiKey); // Currently unused
+const genAI = new GoogleGenerativeAI(apiKey);
 
 // Types for our AI service
 export interface ClothingArticle {
@@ -373,7 +373,8 @@ Generate a high-quality image showing this outfit transformation.`
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error in image generation'
       };
-    } catch (_fallbackError) {
+    } catch (fallbackError) {
+      console.error('Fallback AI method failed:', fallbackError);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error in image generation'

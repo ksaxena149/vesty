@@ -29,7 +29,7 @@ export const createOrUpdateUser = mutation({
       return await ctx.db.insert("users", {
         id: args.id,
         email: args.email,
-        name: args.name,
+        name: args.name ?? undefined, // Explicit undefined handling
         createdAt: now,
         updatedAt: now,
       });
