@@ -36,6 +36,24 @@ export default async function DashboardPage() {
             </Link>
           </div>
 
+          {/* AI Outfit Swap Card (Phase 5) */}
+          <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200 ring-2 ring-purple-200">
+            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+              <span className="text-2xl">🤖</span>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              AI Outfit Swap
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Upload your photo and an outfit to see AI magic in action
+            </p>
+            <Link href="/dashboard/outfit-swap">
+              <button className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-md transition-colors">
+                Try AI Swap
+              </button>
+            </Link>
+          </div>
+
           {/* Upload Image Card */}
           <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
@@ -54,7 +72,7 @@ export default async function DashboardPage() {
 
           {/* Browse Outfits Card */}
           <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
               <span className="text-2xl">👗</span>
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -63,14 +81,14 @@ export default async function DashboardPage() {
             <p className="text-gray-600 mb-4">
               Choose from our collection of stylish outfits
             </p>
-            <button className="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-md transition-colors">
+            <button className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md transition-colors">
               Browse Outfits
             </button>
           </div>
 
           {/* Swap History Card */}
           <div className="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+            <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
               <span className="text-2xl">⏰</span>
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -79,7 +97,7 @@ export default async function DashboardPage() {
             <p className="text-gray-600 mb-4">
               View your previous outfit transformations
             </p>
-            <button className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md transition-colors">
+            <button className="w-full bg-orange-600 hover:bg-orange-700 text-white py-2 px-4 rounded-md transition-colors">
               View History
             </button>
           </div>
