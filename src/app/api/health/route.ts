@@ -17,7 +17,7 @@ interface HealthCheck {
   };
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const startTime = Date.now();
     
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
 }
 
 // Support HEAD requests for simple health checks
-export async function HEAD(request: NextRequest) {
+export async function HEAD(_request: NextRequest) {
   try {
     // Quick health check without detailed response
     const isHealthy = true; // Basic check - server is responding
@@ -116,7 +116,7 @@ export async function HEAD(request: NextRequest) {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
       },
     });
-  } catch (error) {
+  } catch (_error) {
     return new NextResponse(null, { status: 503 });
   }
 }

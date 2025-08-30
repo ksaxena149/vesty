@@ -4,8 +4,7 @@ import { api } from "@/convex/_generated/api";
 import { convexClient } from '@/lib/convex';
 import { performOutfitSwap, imageToBase64Server } from '@/services/ai-service';
 import { uploadFileToS3, uploadBase64ToS3, validateS3Config } from '@/lib/aws-s3';
-import fs from 'fs';
-import path from 'path';
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -151,7 +150,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the swap record
-    const swapData: any = {
+    const swapData = {
       userId,
       userImageId,
       outfitImageId,

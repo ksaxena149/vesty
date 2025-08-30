@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
         'svix-id': svixId,
         'svix-timestamp': svixTimestamp,
         'svix-signature': svixSignature,
-      }) as any;
+      }) as { type: string; data: Record<string, unknown>; };
     } catch (err) {
       console.error('Error verifying webhook:', err);
       return new NextResponse('Error: Verification failed', { status: 400 });

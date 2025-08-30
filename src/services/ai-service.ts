@@ -7,7 +7,7 @@ if (!apiKey) {
   throw new Error('Google AI API key is required');
 }
 console.log('Google AI API key loaded:', apiKey.substring(0, 10) + '...');
-const genAI = new GoogleGenerativeAI(apiKey);
+// const genAI = new GoogleGenerativeAI(apiKey); // Currently unused
 
 // Types for our AI service
 export interface ClothingArticle {
@@ -373,7 +373,7 @@ Generate a high-quality image showing this outfit transformation.`
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error in image generation'
       };
-    } catch (fallbackError) {
+    } catch (_fallbackError) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error in image generation'
@@ -421,7 +421,7 @@ function parseClothingDescription(description: string): ClothingArticle[] {
   const articles: ClothingArticle[] = [];
   
   // Simple regex patterns to extract clothing items
-  const patterns = [
+      // const patterns = [ // Currently unused
     /(\w+)\s*(?:shirt|blouse|top)/gi,
     /(\w+)\s*(?:pants|trousers|jeans)/gi,
     /(\w+)\s*(?:dress|gown)/gi,

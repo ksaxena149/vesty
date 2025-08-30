@@ -78,7 +78,7 @@ export default function UploadTestPage() {
             </h2>
             <div className="space-y-3 text-sm text-yellow-800">
               <div>
-                <strong>Error: "Storage service configuration error"</strong>
+                <strong>Error: &quot;Storage service configuration error&quot;</strong>
                 <ul className="ml-4 mt-1 space-y-1 list-disc">
                   <li>Check that all AWS environment variables are set in .env.local</li>
                   <li>Ensure there are no extra spaces in your credentials</li>
@@ -87,7 +87,7 @@ export default function UploadTestPage() {
               </div>
               
               <div>
-                <strong>Error: "AccessDenied" or "InvalidAccessKeyId"</strong>
+                <strong>Error: &quot;AccessDenied&quot; or &quot;InvalidAccessKeyId&quot;</strong>
                 <ul className="ml-4 mt-1 space-y-1 list-disc">
                   <li>Verify your AWS Access Key ID and Secret Access Key</li>
                   <li>Ensure your IAM user has S3 permissions</li>
@@ -96,7 +96,7 @@ export default function UploadTestPage() {
               </div>
               
               <div>
-                <strong>Error: "NoSuchBucket"</strong>
+                <strong>Error: &quot;NoSuchBucket&quot;</strong>
                 <ul className="ml-4 mt-1 space-y-1 list-disc">
                   <li>Verify your S3 bucket name is correct</li>
                   <li>Ensure the bucket exists in the specified region</li>

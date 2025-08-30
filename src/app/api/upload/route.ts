@@ -9,9 +9,10 @@ import { validateFile, uploadToS3, generateFileKey, validateS3Config } from '@/l
 import { optimizeImage, validateImageBuffer, calculateOptimalSettings } from '@/lib/image-processing';
 import { api } from '@/convex/_generated/api';
 import { convexClient } from '@/lib/convex';
+import { Id } from '@/convex/_generated/dataModel';
 
 // Maximum file size for upload (5MB)
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+// const MAX_FILE_SIZE = 5 * 1024 * 1024; // Currently unused
 
 async function ensureUserExists(userId: string) {
   try {
@@ -34,7 +35,7 @@ async function ensureUserExists(userId: string) {
     }
 
     // Create user in database
-    const newUserId = await convexClient.mutation(api.users.createOrUpdateUser, {
+    await convexClient.mutation(api.users.createOrUpdateUser, {
       id: userId,
       email: clerkUser.emailAddresses[0]?.emailAddress || '',
       name: clerkUser.firstName && clerkUser.lastName 
@@ -228,7 +229,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     // Check authentication (FIXED: auth() is now async!)
     const { userId } = await auth();
@@ -297,7 +298,7 @@ export async function DELETE(req: NextRequest) {
 
     // Find the image record (ConvexDB uses _id instead of id)
     const image = await convexClient.query(api.images.getImageById, {
-      id: imageId as any, // ConvexDB ID type
+      id: imageId as Id<"images">, // ConvexDB ID type
     });
 
     if (!image || image.userId !== userId) {

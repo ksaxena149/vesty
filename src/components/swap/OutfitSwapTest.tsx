@@ -159,7 +159,7 @@ export default function OutfitSwapTest() {
         <CardHeader>
           <CardTitle>AI Outfit Swap Test</CardTitle>
           <CardDescription>
-            Upload an outfit image and your photo to see Gemini's native AI image generation in action.
+            Upload an outfit image and your photo to see Gemini&apos;s native AI image generation in action.
             Simple 2-step process: analyze the outfit, then generate your new look with Nano Banana!
           </CardDescription>
         </CardHeader>
