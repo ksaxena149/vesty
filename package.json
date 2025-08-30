@@ -13,7 +13,13 @@
     "type-check": "tsc --noEmit",
     "convex:dev": "convex dev",
     "convex:deploy": "convex deploy",
-    "convex:dashboard": "convex dashboard"
+    "convex:dashboard": "convex dashboard",
+    "docker:build": "docker build -t vesty-app .",
+    "docker:run": "docker run -p 3000:3000 --env-file .env.local vesty-app",
+    "docker:dev": "docker-compose up --build",
+    "docker:prod": "docker-compose -f docker-compose.prod.yml up -d --build",
+    "docker:stop": "docker-compose -f docker-compose.prod.yml down",
+    "docker:logs": "docker-compose -f docker-compose.prod.yml logs -f"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.879.0",
