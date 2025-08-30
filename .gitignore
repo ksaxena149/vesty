@@ -44,7 +44,6 @@ next-env.d.ts
 uploads/
 temp-images/
 *.log
-tasks.md
 
 # IDE and editors
 .vscode/
@@ -57,5 +56,8 @@ tasks.md
 Thumbs.db
 ehthumbs.db
 
+# Prisma generated files
 /src/generated/prisma
-.cursor
+
+# Cursor IDE files
+.cursor/
