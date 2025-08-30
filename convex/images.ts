@@ -79,3 +79,26 @@ export const updateImage = mutation({
     return await ctx.db.get(id);
   },
 });
+
+// Delete image
+export const deleteImage = mutation({
+  args: { id: v.id("images") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
+  },
+});
+
+// Get image by URL and userId (for duplicate checking)
+export const getImageByUrl = query({
+  args: {
+    userId: v.string(),
+    url: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("images")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .filter((q) => q.eq(q.field("url"), args.url))
+      .first();
+  },
+});

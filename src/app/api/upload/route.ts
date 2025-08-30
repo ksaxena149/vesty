@@ -5,9 +5,10 @@
 
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
 import { validateFile, uploadToS3, generateFileKey, validateS3Config } from '@/lib/aws-s3';
 import { optimizeImage, validateImageBuffer, calculateOptimalSettings } from '@/lib/image-processing';
+import { api } from '@/convex/_generated/api';
+import { convexClient } from '@/lib/convex';
 
 // Maximum file size for upload (5MB)
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -15,8 +16,8 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
 async function ensureUserExists(userId: string) {
   try {
     // Check if user exists in database
-    const existingUser = await prisma.user.findUnique({
-      where: { id: userId }
+    const existingUser = await convexClient.query(api.users.getUserById, {
+      id: userId
     });
 
     if (existingUser) {
@@ -33,17 +34,20 @@ async function ensureUserExists(userId: string) {
     }
 
     // Create user in database
-    const newUser = await prisma.user.create({
-      data: {
-        id: userId,
-        email: clerkUser.emailAddresses[0]?.emailAddress || '',
-        name: clerkUser.firstName && clerkUser.lastName 
-          ? `${clerkUser.firstName} ${clerkUser.lastName}`
-          : clerkUser.firstName || clerkUser.lastName || null,
-      },
+    const newUserId = await convexClient.mutation(api.users.createOrUpdateUser, {
+      id: userId,
+      email: clerkUser.emailAddresses[0]?.emailAddress || '',
+      name: clerkUser.firstName && clerkUser.lastName 
+        ? `${clerkUser.firstName} ${clerkUser.lastName}`
+        : clerkUser.firstName || clerkUser.lastName || null,
     });
 
-    console.log('✅ User created in database:', newUser.email);
+    // Get the created user
+    const newUser = await convexClient.query(api.users.getUserById, {
+      id: userId
+    });
+
+    console.log('✅ User created in database:', newUser?.email);
     return newUser;
   } catch (error) {
     console.error('❌ Failed to ensure user exists:', error);
@@ -180,15 +184,18 @@ export async function POST(req: NextRequest) {
     console.log('✅ S3 upload successful:', uploadResult.url);
 
     // Save image record to database (user is guaranteed to exist now)
-    const imageRecord = await prisma.image.create({
-      data: {
-        userId,
-        type: 'USER', // For user-uploaded photos
-        url: uploadResult.url!, // Map storageUrl to url
-        filename: file.name,
-        fileSize: optimizationResult.metadata.size, // Map optimizedSize to fileSize
-        mimeType: `image/${optimizationResult.metadata.format}`, // Add mimeType
-      },
+    const imageRecordId = await convexClient.mutation(api.images.createImage, {
+      userId,
+      type: 'USER', // For user-uploaded photos
+      url: uploadResult.url!, // Map storageUrl to url
+      filename: file.name,
+      fileSize: optimizationResult.metadata.size, // Map optimizedSize to fileSize
+      mimeType: `image/${optimizationResult.metadata.format}`, // Add mimeType
+    });
+
+    // Get the created image record
+    const imageRecord = await convexClient.query(api.images.getImageById, {
+      id: imageRecordId
     });
 
     console.log('✅ Database record created:', imageRecord.id);
@@ -232,19 +239,23 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Get user's uploaded images (FIXED: Match Prisma schema fields)
-    const images = await prisma.image.findMany({
-      where: { userId, type: 'USER' }, // Filter for user-uploaded images only
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        filename: true,
-        url: true,
-        fileSize: true,
-        mimeType: true,
-        createdAt: true,
-      },
+    // Get user's uploaded images
+    const allImages = await convexClient.query(api.images.getImagesByUserAndType, {
+      userId,
+      type: 'USER', // Filter for user-uploaded images only
     });
+    
+    // Sort by createdAt desc (ConvexDB doesn't have built-in orderBy)
+    const images = allImages
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .map(img => ({
+        id: img._id,
+        filename: img.filename,
+        url: img.url,
+        fileSize: img.fileSize,
+        mimeType: img.mimeType,
+        createdAt: img.createdAt,
+      }));
 
     return NextResponse.json({
       success: true,
@@ -284,15 +295,12 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Find the image record
-    const image = await prisma.image.findFirst({
-      where: {
-        id: imageId,
-        userId, // Ensure user owns the image
-      },
+    // Find the image record (ConvexDB uses _id instead of id)
+    const image = await convexClient.query(api.images.getImageById, {
+      id: imageId as any, // ConvexDB ID type
     });
 
-    if (!image) {
+    if (!image || image.userId !== userId) {
       return NextResponse.json(
         { error: 'Image not found or unauthorized' },
         { status: 404 }
@@ -306,8 +314,8 @@ export async function DELETE(req: NextRequest) {
     // }
 
     // Delete from database
-    await prisma.image.delete({
-      where: { id: imageId },
+    await convexClient.mutation(api.images.deleteImage, {
+      id: image._id,
     });
 
     return NextResponse.json({
