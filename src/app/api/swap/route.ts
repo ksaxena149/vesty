@@ -2,6 +2,7 @@ import { auth } from '@clerk/nextjs/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { api } from "@/convex/_generated/api";
 import { convexClient } from '@/lib/convex';
+import type { Id } from '@/convex/_generated/dataModel';
 import { performOutfitSwap, imageToBase64Server } from '@/services/ai-service';
 import { uploadFileToS3, uploadBase64ToS3, validateS3Config } from '@/lib/aws-s3';
 
@@ -150,7 +151,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the swap record
-    const swapData: any = {
+    const swapData: {
+      userId: string;
+      userImageId: Id<"images">;
+      outfitImageId: Id<"images">;
+      status: 'COMPLETED';
+      resultImageId?: Id<"images">;
+    } = {
       userId,
       userImageId,
       outfitImageId,

@@ -35,7 +35,11 @@ async function ensureUserExists(userId: string) {
     }
 
     // Create user in database - construct data with proper typing
-    const userData: any = {
+    const userData: {
+      id: string;
+      email: string;
+      name?: string;
+    } = {
       id: userId,
       email: clerkUser.emailAddresses[0]?.emailAddress || '',
     };

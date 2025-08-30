@@ -7,6 +7,7 @@ if (!apiKey) {
   throw new Error('Google AI API key is required');
 }
 console.log('Google AI API key loaded:', apiKey.substring(0, 10) + '...');
+// AI service will use this client when implementing actual AI features
 const genAI = new GoogleGenerativeAI(apiKey);
 
 // Types for our AI service

@@ -26,7 +26,13 @@ export const createOrUpdateUser = mutation({
       return existingUser._id;
     } else {
       // Create new user
-      const userData: any = {
+      const userData: {
+        id: string;
+        email: string;
+        name?: string;
+        createdAt: number;
+        updatedAt: number;
+      } = {
         id: args.id,
         email: args.email,
         createdAt: now,

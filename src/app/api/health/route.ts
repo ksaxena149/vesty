@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 /**
  * Health Check API Route
@@ -17,7 +17,7 @@ interface HealthCheck {
   };
 }
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     const startTime = Date.now();
     
@@ -105,7 +105,7 @@ export async function GET(_request: NextRequest) {
 }
 
 // Support HEAD requests for simple health checks
-export async function HEAD(_request: NextRequest) {
+export async function HEAD() {
   try {
     // Quick health check without detailed response
     const isHealthy = true; // Basic check - server is responding
@@ -116,7 +116,8 @@ export async function HEAD(_request: NextRequest) {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
       },
     });
-  } catch (_error) {
+  } catch (error) {
+    console.error('Health check error:', error);
     return new NextResponse(null, { status: 503 });
   }
 }

@@ -23,7 +23,11 @@ export async function syncUserFromClerk(clerkUser: ClerkUser) {
 
   try {
     // Create or update user in ConvexDB - construct data with proper typing
-    const userData: any = {
+    const userData: {
+      id: string;
+      email: string;
+      name?: string;
+    } = {
       id: clerkUser.id,
       email,
     };
