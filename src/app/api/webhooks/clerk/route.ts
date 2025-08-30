@@ -5,8 +5,9 @@ import { syncUserFromClerk, deleteUserFromDb, type ClerkUser } from '@/lib/user-
 
 const webhookSecret = process.env.CLERK_WEBHOOK_SECRET;
 
+// Note: This will be checked at runtime, not build time
 if (!webhookSecret) {
-  throw new Error('Missing CLERK_WEBHOOK_SECRET environment variable');
+  console.warn('CLERK_WEBHOOK_SECRET not configured - webhook endpoint will not function');
 }
 
 export async function POST(req: NextRequest) {
